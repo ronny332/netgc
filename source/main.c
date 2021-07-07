@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 
 		for (int i = 0; i < sizeof(hosts) / sizeof(char *); i++)
 		{
-			if (getipbyhost(hosts[i], &(ip[0])) == NET_SUCCESS)
+			if (get_ipbyhost(hosts[i], &(ip[0])) == NET_SUCCESS)
 			{
 				printf("host:\t%s\nip:\t%s\n\n", hosts[i], ip);
 			}

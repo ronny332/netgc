@@ -14,15 +14,8 @@ const BOOL netgc_debug = FALSE;
 
 struct map_t *dns_cache = NULL;
 
-/* helper function to create transaction ids, used in dns requests */
-u16 gettransitionid(void)
-{
-    srand(time(NULL));
-    return (u16)(rand() % 5000 + 5000);
-}
-
 /* one solution for the missing hostname to ip address implementation of libogc */
-int getipbyhost(const char *host, char *ip)
+int get_ipbyhost(const char *host, char *ip)
 {
     /* no functionality without network */
     if (net_initialized == FALSE)
@@ -38,11 +31,17 @@ int getipbyhost(const char *host, char *ip)
         printf("\n#### > debug start\n");
 
     /* pre checks */
-    if (strlen(host) < 3 || strlen(host) > 255 || strstr(host, ".") == NULL || host[0] == '.' || host[strlen(host) - 1] == '.')
+    if (_is_ipaddress(host) == TRUE)
+    {
+        if (netgc_debug)
+            printf("host is ip address\n");
+        return -2;
+    }
+    if (_is_validhost(host))
     {
         if (netgc_debug)
             printf("host invalid\n");
-        return -2;
+        return -3;
     }
 
     /* initialize dns_cache, if not already done */
@@ -75,7 +74,7 @@ int getipbyhost(const char *host, char *ip)
     int buffer_len = 1024;
     char buffer[buffer_len];
     memset(buffer, 0, buffer_len);
-    int req_id = gettransitionid();
+    int req_id = _get_transitionid();
 
     if (netgc_debug)
         printf("request transition id: %x\n", req_id);
@@ -167,7 +166,7 @@ int getipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("can't create socket\n");
-        return -3;
+        return -4;
     }
 
     struct sockaddr_in addr;
@@ -180,7 +179,7 @@ int getipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("connect error\n");
-        return -4;
+        return -5;
     }
 
     if (netgc_debug)
@@ -190,7 +189,7 @@ int getipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("sending failed");
-        return -5;
+        return -6;
     }
 
     if (netgc_debug)
@@ -205,7 +204,7 @@ int getipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("invalid response\n");
-        return -6;
+        return -7;
     }
 
     if (netgc_debug)
@@ -235,7 +234,7 @@ int getipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("invalid transition id in response\n");
-        return -7;
+        return -8;
     }
 
     s16_res += 1;
@@ -245,7 +244,7 @@ int getipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("response has errors\n");
-        return -8;
+        return -9;
     }
 
     // last 4 bytes of response is the ip address
@@ -263,4 +262,42 @@ int getipbyhost(const char *host, char *ip)
         printf("#### /> debug end\n\n");
 
     return TRUE;
+}
+
+/* read unix timestamp from NTP server */
+int get_tsfromntp(const char *host)
+{
+    return TRUE;
+}
+
+/* helper function to create transaction ids, used in dns requests */
+u16 _get_transitionid(void)
+{
+    srand(time(NULL));
+    return (u16)(rand() % 5000 + 5000);
+}
+
+/* caused by missing regexp features, this should work as a simple IP address validator */
+BOOL _is_ipaddress(const char *ip)
+{
+    int len = (ip != NULL) ? strlen(ip) : 0;
+    if (len && len >= 7 && len <= 15 && ip[0] != '.' && ip[len - 1] != '.')
+    {
+        int occurrences = 0;
+        for (int i = 0; i < strlen(ip); i++)
+        {
+            if (ip[i] == '.')
+            {
+                occurrences += 1;
+            }
+        }
+        return (occurrences == 3) ? TRUE : FALSE;
+    }
+
+    return FALSE;
+}
+
+BOOL _is_validhost(const char *host)
+{
+    return (strlen(host) < 3 || strlen(host) > 255 || strstr(host, ".") == NULL || host[0] == '.' || host[strlen(host) - 1] == '.') ? FALSE : TRUE;
 }
