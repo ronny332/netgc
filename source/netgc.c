@@ -15,6 +15,7 @@ const BOOL netgc_debug = FALSE;
 struct map_t *dns_cache = NULL;
 
 /* one solution for the missing hostname to ip address implementation of libogc */
+// TODO remove debug messages
 int get_ipbyhost(const char *host, char *ip)
 {
     /* no functionality without network */
@@ -300,10 +301,12 @@ int get_tsfromntp(const char *host)
     if (net_connect(sock, (struct sockaddr *)&ntp_server, sizeof(ntp_server)) < 0)
         return NET_CONNECTERROR;
 
+    // the request buffer gets used for the request and response (both 48 bytes)
     int len_dns_request = 48;
     char dns_request[len_dns_request];
 
     memset(dns_request, 0, len_dns_request);
+    // byte 0 with v3 dns request header
     dns_request[0] = 0b00011011;
 
     if (net_send(sock, dns_request, len_dns_request, 0) < 0)
@@ -312,6 +315,7 @@ int get_tsfromntp(const char *host)
     if (net_recv(sock, dns_request, len_dns_request - 1, 0) < 0)
         return NET_INVALIDRESPONSE;
 
+    // the NTP response contains 2 identical timestamps
     u32 ts1 = ntohl(*((u32 *)(dns_request + 32))) - epoch_offset;
     u32 ts2 = ntohl(*((u32 *)(dns_request + 40))) - epoch_offset;
 
