@@ -23,7 +23,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("network not initialized\n");
-        return NET_NONETWORK;
+        return NETGC_NONETWORK;
     }
 
     if (netgc_debug)
@@ -36,13 +36,13 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("host is ip address\n");
-        return NET_HOSTISIPADDRESS;
+        return NETGC_HOSTISIPADDRESS;
     }
     if (_is_validhost(host) == FALSE)
     {
         if (netgc_debug)
             printf("host invalid\n");
-        return NET_INVALIDHOST;
+        return NETGC_INVALIDHOST;
     }
 
     /* initialize dns_cache, if not already done */
@@ -54,7 +54,7 @@ int get_ipbyhost(const char *host, char *ip)
     /* check cache for values */
     char *ip_cached = map_get(dns_cache, host);
 
-    if (strlen(ip_cached) > 0)
+    if (ip_cached != NULL && (ip_cached) > 0)
     {
         memset(ip, 0, 16);
         strncpy(ip, ip_cached, 16);
@@ -167,7 +167,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("can't create socket\n");
-        return NET_SOCKERROR;
+        return NETGC_SOCKERROR;
     }
 
     struct sockaddr_in addr;
@@ -180,7 +180,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("connect error\n");
-        return NET_CONNECTERROR;
+        return NETGC_CONNECTERROR;
     }
 
     if (netgc_debug)
@@ -190,7 +190,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("sending failed");
-        return NET_SENDINGFAILED;
+        return NETGC_SENDINGFAILED;
     }
 
     if (netgc_debug)
@@ -205,7 +205,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("invalid response\n");
-        return NET_INVALIDRESPONSE;
+        return NETGC_INVALIDRESPONSE;
     }
 
     if (netgc_debug)
@@ -235,7 +235,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("invalid transition id in response\n");
-        return NET_INVALIDTRANSITIONID;
+        return NETGC_INVALIDTRANSITIONID;
     }
 
     s16_res += 1;
@@ -245,7 +245,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("response has errors\n");
-        return NET_RESPONSEHASERRRORS;
+        return NETGC_RESPONSEHASERRRORS;
     }
 
     // last 4 bytes of response is the ip address
@@ -276,21 +276,21 @@ int get_tsfromntp(const char *host)
     int ret = 0;
 
     if (net_initialized == FALSE)
-        return NET_NONETWORK;
+        return NETGC_NONETWORK;
     if (_is_validhost(host) == FALSE)
-        return NET_INVALIDHOST;
+        return NETGC_INVALIDHOST;
     if (_is_ipaddress(host) == TRUE)
-        return NET_HOSTISIPADDRESS;
+        return NETGC_HOSTISIPADDRESS;
 
     char ntp_server_ip[16];
-    if ((ret = get_ipbyhost(host, &(ntp_server_ip[0]))) != NET_SUCCESS)
+    if ((ret = get_ipbyhost(host, &(ntp_server_ip[0]))) != NETGC_SUCCESS)
         return ret;
 
     s32 sock = -1;
     sock = net_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
     if (sock < 0)
-        return NET_SOCKERROR;
+        return NETGC_SOCKERROR;
 
     struct sockaddr_in ntp_server;
     memset(&ntp_server, 0, sizeof(ntp_server));
@@ -299,7 +299,7 @@ int get_tsfromntp(const char *host)
     ntp_server.sin_port = htons(123);
 
     if (net_connect(sock, (struct sockaddr *)&ntp_server, sizeof(ntp_server)) < 0)
-        return NET_CONNECTERROR;
+        return NETGC_CONNECTERROR;
 
     // the request buffer gets used for the request and response (both 48 bytes)
     int len_dns_request = 48;
@@ -310,17 +310,17 @@ int get_tsfromntp(const char *host)
     dns_request[0] = 0b00011011;
 
     if (net_send(sock, dns_request, len_dns_request, 0) < 0)
-        return NET_SENDINGFAILED;
+        return NETGC_SENDINGFAILED;
 
     if (net_recv(sock, dns_request, len_dns_request - 1, 0) < 0)
-        return NET_INVALIDRESPONSE;
+        return NETGC_INVALIDRESPONSE;
 
     // the NTP response contains 2 identical timestamps
     u32 ts1 = ntohl(*((u32 *)(dns_request + 32))) - epoch_offset;
     u32 ts2 = ntohl(*((u32 *)(dns_request + 40))) - epoch_offset;
 
     if (ts1 == 0 || ts2 == 0 || ts1 != ts2)
-        return NET_RESPONSEHASERRRORS;
+        return NETGC_RESPONSEHASERRRORS;
 
     net_close(sock);
 

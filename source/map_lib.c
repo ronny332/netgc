@@ -78,7 +78,7 @@ void map_set(struct map_t *m,const char *name,const char *value) {
 char *map_get(struct map_t *m,const char *name) {
    struct map_t *map;
    for(map=m;map!=NULL;map=map->nxt) {
-      if(!strcasecmp(name,map->name)) {
+      if(!map->name || !strcasecmp(name,map->name)) {
          return map->value;
       }
    }
