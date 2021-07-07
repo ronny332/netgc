@@ -25,16 +25,20 @@ int main(int argc, char **argv)
 
 	if (net_initialized)
 	{
-		char *hosts[] = {"www.test.com", "www.facebook.com", "www.twitter.com", "www.amazon.com", "www.amazon.co.uk", "www.ebay.com", "www.test.com"};
-		char ip[16] = {0};
+		// char *hosts[] = {"www.test.com", "www.facebook.com", "www.twitter.com", "www.amazon.com", "www.amazon.co.uk", "www.ebay.com", "www.test.com"};
+		// char ip[16] = {0};
 
-		for (int i = 0; i < sizeof(hosts) / sizeof(char *); i++)
-		{
-			if (get_ipbyhost(hosts[i], &(ip[0])) == NET_SUCCESS)
-			{
-				printf("host:\t%s\nip:\t%s\n\n", hosts[i], ip);
-			}
-		}
+		// for (int i = 0; i < sizeof(hosts) / sizeof(char *); i++)
+		// {
+		// 	if (get_ipbyhost(hosts[i], &(ip[0])) == NET_SUCCESS)
+		// 	{
+		// 		printf("host:\t%s\nip:\t%s\n\n", hosts[i], ip);
+		// 	}
+		// }
+
+		char *host = "0.us.pool.ntp.org";
+		
+		printf("ts: %d\n", get_tsfromntp(host));
 	}
 	else
 	{

@@ -9,6 +9,7 @@
 #include "map_lib.h"
 
 const char *dns_ip = "1.1.1.1";
+const u32 epoch_offset = 2208988800ull; // seconds since 1900
 const BOOL netgc_debug = FALSE;
 
 struct map_t *dns_cache = NULL;
@@ -36,7 +37,7 @@ int get_ipbyhost(const char *host, char *ip)
             printf("host is ip address\n");
         return NET_HOSTISIPADDRESS;
     }
-    if (_is_validhost(host))
+    if (_is_validhost(host) == FALSE)
     {
         if (netgc_debug)
             printf("host invalid\n");
@@ -258,6 +259,11 @@ int get_ipbyhost(const char *host, char *ip)
         printf("storing ip %s for host %s at dns_cache\n", ip, host);
 
     if (netgc_debug)
+        printf("closing socket %d\n", sock);
+
+    net_close(sock);
+
+    if (netgc_debug)
         printf("#### /> debug end\n\n");
 
     return TRUE;
@@ -266,14 +272,55 @@ int get_ipbyhost(const char *host, char *ip)
 /* read unix timestamp from NTP server */
 int get_tsfromntp(const char *host)
 {
+    int ret = 0;
+
     if (net_initialized == FALSE)
         return NET_NONETWORK;
     if (_is_validhost(host) == FALSE)
         return NET_INVALIDHOST;
-    if (_is_ipaddress(host))
+    if (_is_ipaddress(host) == TRUE)
         return NET_HOSTISIPADDRESS;
 
-    return 0;
+    char ntp_server_ip[16];
+    if ((ret = get_ipbyhost(host, &(ntp_server_ip[0]))) != NET_SUCCESS)
+        return ret;
+
+    s32 sock = -1;
+    sock = net_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (sock < 0)
+        return NET_SOCKERROR;
+
+    struct sockaddr_in ntp_server;
+    memset(&ntp_server, 0, sizeof(ntp_server));
+    ntp_server.sin_addr.s_addr = inet_addr(ntp_server_ip);
+    ntp_server.sin_family = AF_INET;
+    ntp_server.sin_port = htons(123);
+
+    if (net_connect(sock, (struct sockaddr *)&ntp_server, sizeof(ntp_server)) < 0)
+        return NET_CONNECTERROR;
+
+    int len_dns_request = 48;
+    char dns_request[len_dns_request];
+
+    memset(dns_request, 0, len_dns_request);
+    dns_request[0] = 0b00011011;
+
+    if (net_send(sock, dns_request, len_dns_request, 0) < 0)
+        return NET_SENDINGFAILED;
+
+    if (net_recv(sock, dns_request, len_dns_request - 1, 0) < 0)
+        return NET_INVALIDRESPONSE;
+
+    u32 ts1 = ntohl(*((u32 *)(dns_request + 32))) - epoch_offset;
+    u32 ts2 = ntohl(*((u32 *)(dns_request + 40))) - epoch_offset;
+
+    if (ts1 == 0 || ts2 == 0 || ts1 != ts2)
+        return NET_RESPONSEHASERRRORS;
+
+    net_close(sock);
+
+    return ts1;
 }
 
 /* helper function to create transaction ids, used in dns requests */
