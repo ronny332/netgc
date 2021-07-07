@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <gcbool.h>
-#include <malloc.h>
 #include <network.h>
 
 #include "netgc.h"
@@ -22,7 +21,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("network not initialized\n");
-        return -1;
+        return NET_NONETWORK;
     }
 
     if (netgc_debug)
@@ -35,13 +34,13 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("host is ip address\n");
-        return -2;
+        return NET_HOSTISIPADDRESS;
     }
     if (_is_validhost(host))
     {
         if (netgc_debug)
             printf("host invalid\n");
-        return -3;
+        return NET_INVALIDHOST;
     }
 
     /* initialize dns_cache, if not already done */
@@ -166,7 +165,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("can't create socket\n");
-        return -4;
+        return NET_SOCKERROR;
     }
 
     struct sockaddr_in addr;
@@ -179,7 +178,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("connect error\n");
-        return -5;
+        return NET_CONNECTERROR;
     }
 
     if (netgc_debug)
@@ -189,7 +188,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("sending failed");
-        return -6;
+        return NET_SENDINGFAILED;
     }
 
     if (netgc_debug)
@@ -204,7 +203,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("invalid response\n");
-        return -7;
+        return NET_INVALIDRESPONSE;
     }
 
     if (netgc_debug)
@@ -234,7 +233,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("invalid transition id in response\n");
-        return -8;
+        return NET_INVALIDTRANSITIONID;
     }
 
     s16_res += 1;
@@ -244,7 +243,7 @@ int get_ipbyhost(const char *host, char *ip)
     {
         if (netgc_debug)
             printf("response has errors\n");
-        return -9;
+        return NET_RESPONSEHASERRRORS;
     }
 
     // last 4 bytes of response is the ip address
@@ -267,7 +266,14 @@ int get_ipbyhost(const char *host, char *ip)
 /* read unix timestamp from NTP server */
 int get_tsfromntp(const char *host)
 {
-    return TRUE;
+    if (net_initialized == FALSE)
+        return NET_NONETWORK;
+    if (_is_validhost(host) == FALSE)
+        return NET_INVALIDHOST;
+    if (_is_ipaddress(host))
+        return NET_HOSTISIPADDRESS;
+
+    return 0;
 }
 
 /* helper function to create transaction ids, used in dns requests */
@@ -299,5 +305,6 @@ BOOL _is_ipaddress(const char *ip)
 
 BOOL _is_validhost(const char *host)
 {
-    return (strlen(host) < 3 || strlen(host) > 255 || strstr(host, ".") == NULL || host[0] == '.' || host[strlen(host) - 1] == '.') ? FALSE : TRUE;
+    int len = (host != NULL) ? strlen(host) : 0;
+    return (len < 3 || len > 255 || strstr(host, ".") == NULL || host[0] == '.' || host[len - 1] == '.') ? FALSE : TRUE;
 }

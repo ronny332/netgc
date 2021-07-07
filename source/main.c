@@ -5,7 +5,6 @@
 #include <ogcsys.h>
 #include <gccore.h>
 
-//#include "ftpd.h"
 #include "bba.h"
 #include "netgc.h"
 
@@ -19,15 +18,14 @@ int main(int argc, char **argv)
 
 	xfb = Initialise();
 
-	//FTPD_init();
-	//EQ_run();
+	// make the output visible outside of overscan of CRT
 	printf("\n\n\n");
 
 	init_network();
 
 	if (net_initialized)
 	{
-		char *hosts[] = {"www.test.com", "www.facebook.com", "www.twitter.com", "www.nn332.de", "www.hna.de", "www.nnm.de", "www.ebay.de", "www.test.com"};
+		char *hosts[] = {"www.test.com", "www.facebook.com", "www.twitter.com", "www.amazon.com", "www.amazon.co.uk", "www.ebay.com", "www.test.com"};
 		char ip[16] = {0};
 
 		for (int i = 0; i < sizeof(hosts) / sizeof(char *); i++)

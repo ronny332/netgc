@@ -10,6 +10,7 @@
 #define NET_INVALIDRESPONSE -7
 #define NET_INVALIDTRANSITIONID -8
 #define NET_RESPONSEHASERRRORS -9
+#define NET_INVALIDIPADDRESS -10
 #define NET_SUCCESS 1
 
 int get_ipbyhost(const char *host, char *ip);
