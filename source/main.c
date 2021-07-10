@@ -37,8 +37,9 @@ int main(int argc, char **argv)
 		// }
 
 		char *host = "0.us.pool.ntp.org";
+		s16 gmt = 1;
 		
-		printf("time set: %s\n", set_gctimefromntp(host) ? "successfully set" : "not successful");
+		printf("time set: %s\n", set_gctimefromntp(host, gmt) ? "successfully set" : "not successful");
 	}
 	else
 	{

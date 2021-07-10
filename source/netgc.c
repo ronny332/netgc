@@ -10,7 +10,8 @@
 
 extern u32 __SYS_GetRTC(u32 *gctime);
 extern u32 __SYS_SetRTC(u32 gctime);
-void settime(u64 t);
+u32 SYS_GetCounterBias(void);
+void SYS_SetCounterBias(u32 bias);
 
 const char *dns_ip = "1.1.1.1";
 const u32 epoch_offset_gc = 946681200;   // seconds from 1970 till 2000
@@ -276,7 +277,7 @@ int get_ipbyhost(const char *host, char *ip)
 }
 
 /* read unix timestamp from NTP server */
-s32 set_gctimefromntp(const char *host)
+s32 set_gctimefromntp(const char *host, s16 gmt)
 {
     s32 ret = 0;
 
@@ -342,6 +343,10 @@ s32 set_gctimefromntp(const char *host)
     __SYS_GetRTC(&gctime_now);
     printf("gctime now:%u\n", gctime_now);
 
+    printf("bias old: %u\n", SYS_GetCounterBias());
+    SYS_SetCounterBias(_time_gmttosec(gmt));
+    printf("bias new: %u\n", SYS_GetCounterBias());
+
     return ret;
 }
 
@@ -376,6 +381,11 @@ BOOL _is_validhost(const char *host)
 {
     int len = (host != NULL) ? strlen(host) : 0;
     return (len < 3 || len > 255 || strstr(host, ".") == NULL || host[0] == '.' || host[len - 1] == '.') ? FALSE : TRUE;
+}
+
+s32 _time_gmttosec(s16 gmt)
+{
+    return gmt * 3600;
 }
 
 u32 _time_ntptounix(u32 ntp)

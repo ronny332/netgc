@@ -15,11 +15,12 @@
 #define NETGC_SUCCESS 1
 
 int get_ipbyhost(const char *host, char *ip);
-s32 set_gctimefromntp(const char *host);
+s32 set_gctimefromntp(const char *hosti, s16 gmt);
 
 u16 _get_transitionid(void);
 BOOL _is_ipaddress(const char *ip);
 BOOL _is_validhost(const char *host);
+s32 _time_gmttosec(s16 gmt);
 u32 _time_ntptounix(u32 ntp);
 u32 _time_unixtogc(u32 ts);
 
