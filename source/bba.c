@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <gcbool.h>
+#include <gctypes.h>
 #include <network.h>
 
 #include "exi.h"
@@ -17,8 +17,8 @@ char bba_ip[16];
 void init_network(void *args) {
 
 	int res = 0;
-
 	bba_exists = exi_bba_exists();
+
 	if(bba_exists && !net_initialized) {
 		res = if_config(bba_ip, NULL, NULL, TRUE, 20);
 		if(res >= 0 && strcmp("255.255.255.255", bba_ip)) {

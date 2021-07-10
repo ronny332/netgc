@@ -1,15 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <gcbool.h>
+#include <gctypes.h>
 #include <network.h>
 
 #include "netgc.h"
 #include "bba.h"
 #include "map_lib.h"
 
+extern u32 __SYS_GetRTC(u32 *gctime);
+extern u32 __SYS_SetRTC(u32 gctime);
+void settime(u64 t);
+
 const char *dns_ip = "1.1.1.1";
-const u32 epoch_offset = 2208988800ull; // seconds since 1900
+const u32 epoch_offset_gc = 946681200;   // seconds from 1970 till 2000
+const u32 epoch_offset_ntp = 2208988800; // seconds from 1900 till 1970
 const BOOL netgc_debug = FALSE;
 
 struct map_t *dns_cache = NULL;
@@ -271,9 +276,9 @@ int get_ipbyhost(const char *host, char *ip)
 }
 
 /* read unix timestamp from NTP server */
-int get_tsfromntp(const char *host)
+s32 set_gctimefromntp(const char *host)
 {
-    int ret = 0;
+    s32 ret = 0;
 
     if (net_initialized == FALSE)
         return NETGC_NONETWORK;
@@ -316,15 +321,28 @@ int get_tsfromntp(const char *host)
         return NETGC_INVALIDRESPONSE;
 
     // the NTP response contains 2 identical timestamps
-    u32 ts1 = ntohl(*((u32 *)(dns_request + 32))) - epoch_offset;
-    u32 ts2 = ntohl(*((u32 *)(dns_request + 40))) - epoch_offset;
+    u32 ts1 = ntohl(*((u32 *)(dns_request + 32)));
+    u32 ts2 = ntohl(*((u32 *)(dns_request + 40)));
 
     if (ts1 == 0 || ts2 == 0 || ts1 != ts2)
         return NETGC_RESPONSEHASERRRORS;
 
     net_close(sock);
 
-    return ts1;
+    printf("unixtime: %u\n", _time_ntptounix(ts1));
+
+    u32 gctime_old = 0;
+    __SYS_GetRTC(&gctime_old);
+    u32 gctime_new = _time_unixtogc(_time_ntptounix(ts1));
+
+    printf("gctime old:%u\ngctime new: %u\n", gctime_old, gctime_new);
+    ret = __SYS_SetRTC(gctime_new);
+
+    u32 gctime_now = 0;
+    __SYS_GetRTC(&gctime_now);
+    printf("gctime now:%u\n", gctime_now);
+
+    return ret;
 }
 
 /* helper function to create transaction ids, used in dns requests */
@@ -358,4 +376,14 @@ BOOL _is_validhost(const char *host)
 {
     int len = (host != NULL) ? strlen(host) : 0;
     return (len < 3 || len > 255 || strstr(host, ".") == NULL || host[0] == '.' || host[len - 1] == '.') ? FALSE : TRUE;
+}
+
+u32 _time_ntptounix(u32 ntp)
+{
+    return ntp - epoch_offset_ntp;
+}
+
+u32 _time_unixtogc(u32 ts)
+{
+    return ts - epoch_offset_gc;
 }

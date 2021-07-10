@@ -1,5 +1,5 @@
 /* rebuild of needed Swiss-GC files, to make BBA handling identical */
-
+#include <stdio.h>
 #include <ogc/exi.h>
 #include "exi.h"
 
@@ -10,7 +10,8 @@ int exi_bba_exists()
 
 unsigned int exi_get_id(int chn, int dev)
 {
-	u32 cid = 0;
+	s32 cid = 0;
 	EXI_GetID(chn, dev, &cid);
+	//printf("id: %d\nchn: %d, dev: %d\n", cid, chn, dev);
 	return cid;
 }

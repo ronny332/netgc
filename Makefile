@@ -30,6 +30,9 @@ CXXFLAGS	= $(CFLAGS)
 
 LDFLAGS		= -g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 
+export  LIBOGC_INC  :=  $(DEVKITPRO)/libogc2/include
+export  LIBOGC_LIB  :=  $(DEVKITPRO)/libogc2/lib/cube
+
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
